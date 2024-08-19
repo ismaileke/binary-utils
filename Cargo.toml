@@ -1,0 +1,9 @@
+[package]
+name = "binary_utils"
+authors = ["ismaileke"]
+description = "A binary system to be used for RakNet protocol"
+license = "MIT"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
