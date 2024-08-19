@@ -1,5 +1,5 @@
 [package]
-name = "binary_utils"
+name = "binary-utils"
 authors = ["ismaileke"]
 description = "A binary system to be used for RakNet protocol"
 license = "MIT"
