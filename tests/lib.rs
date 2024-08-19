@@ -3,7 +3,7 @@
 mod tests {
     extern crate binary_utils;
 
-    use binary_utils::binary_utils::Stream;
+    use binary_utils::binary::Stream;
 
     #[test]
     fn test() {
