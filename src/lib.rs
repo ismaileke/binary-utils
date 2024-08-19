@@ -1,4 +1,4 @@
-pub mod binary_utils {
+pub mod binary {
     pub struct Stream {
         buffer: Vec<u8>,
         offset: u16,
