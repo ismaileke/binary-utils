@@ -87,9 +87,13 @@ pub mod binary {
 
         pub fn get_short(&mut self) -> u16 {
             let bytes = self.get(2);
+
+
             match bytes {
                 Ok(byte) => {
-                    u16::from_le_bytes([byte[0], byte[1]])
+                    let high_byte = byte[0] as u16;
+                    let low_byte = byte[1] as u16;
+                    (high_byte << 8) | low_byte
                 }
                 Err(err) => {
                     println!("Error get_short(): {}", err);
@@ -124,7 +128,7 @@ pub mod binary {
                 Ok(byte) => {
                     let low_byte = byte[0] as u16;
                     let high_byte = byte[1] as u16;
-                    (high_byte << 8) | low_byte
+                    low_byte | (high_byte << 8)
                 }
                 Err(err) => {
                     println!("Error get_l_short(): {}", err);
