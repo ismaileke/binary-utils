@@ -116,9 +116,8 @@ pub mod binary {
         }
 
         pub fn put_short(&mut self, value: u16) {
-            let short_bytes: [u8; 2] = value.to_le_bytes();
-            self.buffer.push(short_bytes[0]);
-            self.buffer.push(short_bytes[1]);
+            self.buffer.push((value >> 8) as u8);
+            self.buffer.push((value & 0xFF) as u8);
         }
 
         pub fn get_l_short(&mut self) -> u16 {
