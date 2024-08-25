@@ -211,7 +211,7 @@ pub mod binary {
             }
         }
 
-        pub fn put_int(&mut self, value: i32) {
+        pub fn put_int(&mut self, value: u32) {
             let bytes: [u8; 4] = value.to_be_bytes();
             self.buffer.extend_from_slice(&bytes);
         }
@@ -229,7 +229,7 @@ pub mod binary {
             }
         }
 
-        pub fn put_l_int(&mut self, value: i32) {
+        pub fn put_l_int(&mut self, value: u32) {
             let bytes: [u8; 4] = value.to_le_bytes();
             self.buffer.extend_from_slice(&bytes);
         }
