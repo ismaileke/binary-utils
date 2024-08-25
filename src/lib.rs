@@ -194,11 +194,11 @@ pub mod binary {
             self.buffer.push(((value >> 16) & 0xFF) as u8);
         }
 
-        pub fn get_int(&mut self) -> i32 {
+        pub fn get_int(&mut self) -> u32 {
             let bytes = self.get(4);
             match bytes {
                 Ok(byte) => {
-                    i32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
+                    u32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
                 }
                 Err(err) => {
                     println!("Error get_int(): {}", err);
@@ -212,11 +212,11 @@ pub mod binary {
             self.buffer.extend_from_slice(&bytes);
         }
 
-        pub fn get_l_int(&mut self) -> i32 {
+        pub fn get_l_int(&mut self) -> u32 {
             let bytes = self.get(4);
             match bytes {
                 Ok(byte) => {
-                    i32::from_le_bytes([byte[0], byte[1], byte[2], byte[3]])
+                    u32::from_le_bytes([byte[0], byte[1], byte[2], byte[3]])
                 }
                 Err(err) => {
                     println!("Error get_l_int(): {}", err);
