@@ -7,8 +7,10 @@ mod tests {
 
     #[test]
     fn test() {
-        let mut stream = Stream::new(vec![0, 52, 255], 0);
-        println!("{:?}", stream.get(1));
+        let mut stream = Stream::new(vec![], 0);
+        stream.put_unsigned_var_int(2322211);
+        println!("{:?}", stream.get_buffer());
+        println!("{}", stream.get_unsigned_var_int());
 
     }
 }

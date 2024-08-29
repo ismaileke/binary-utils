@@ -380,6 +380,7 @@ pub mod binary {
                             return value;
                         }
                     }
+                    println!("Error get_unsigned_var_int()");
                     0
                 }
                 Err(err) => {
@@ -388,13 +389,16 @@ pub mod binary {
                 }
             }
         }
+
         pub fn put_unsigned_var_int(&mut self, mut value: u32) {
-            while value > 0x7f {
-                self.buffer.push((value & 0x7f) as u8 | 0x80);
+            for _ in 0..5 {
+                if value >> 7 != 0 {
+                    self.buffer.push(((value & 0x7f) | 0x80) as u8);
+                } else {
+                    self.buffer.push(value as u8 & 0x7f);
+                }
                 value >>= 7;
             }
-
-            self.buffer.push(value as u8);
         }
 
         pub fn get_var_int(&mut self) -> i32 {
