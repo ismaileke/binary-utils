@@ -368,36 +368,28 @@ pub mod binary {
         }
 
         pub fn get_unsigned_var_int(&mut self) -> u32 {
-            let bytes = self.get(5);
-
-            match bytes {
-                Ok(byte) => {
-                    let mut value = 0u32;
-                    for i in 0..5 {
-                        let b = byte[i];
-                        value |= ((b & 0x7f) as u32) << (i * 7);
-                        if b & 0x80 == 0 {
-                            return value;
-                        }
-                    }
-                    println!("Error get_unsigned_var_int()");
-                    0
-                }
-                Err(err) => {
-                    println!("Error get_unsigned_var_int(): {}", err);
-                    0
+            let mut value = 0u32;
+            for i in 0..5 {
+                let b = self.get_byte();
+                value |= ((b & 0x7f) as u32) << (i * 7);
+                if b & 0x80 == 0 {
+                    return value;
                 }
             }
+            println!("Error get_unsigned_var_int()");
+            0
         }
 
         pub fn put_unsigned_var_int(&mut self, mut value: u32) {
             for _ in 0..5 {
-                if value >> 7 != 0 {
-                    self.buffer.push(((value & 0x7f) | 0x80) as u8);
-                } else {
-                    self.buffer.push(value as u8 & 0x7f);
+                if (value >> 7) != 0{
+                    self.buffer.push((value | 0x80) as u8);
+                }else{
+                    self.buffer.push((value & 0x7f) as u8);
+                    return;
                 }
-                value >>= 7;
+
+                value = value >> 7;
             }
         }
 
