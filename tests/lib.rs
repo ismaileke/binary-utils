@@ -8,9 +8,9 @@ mod tests {
     #[test]
     fn test() {
         let mut stream = Stream::new(vec![], 0);
-        stream.put_unsigned_var_int(2322211);
+        stream.put_var_int(2322211);
         println!("{:?}", stream.get_buffer());
-        println!("{}", stream.get_unsigned_var_int());
+        println!("{}", stream.get_var_int());
 
     }
 }
