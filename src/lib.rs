@@ -1,11 +1,11 @@
 pub mod binary {
     pub struct Stream {
         buffer: Vec<u8>,
-        offset: u16,
+        offset: u32,
     }
 
     impl Stream {
-        pub fn new(buffer: Vec<u8>, offset: u16) -> Self {
+        pub fn new(buffer: Vec<u8>, offset: u32) -> Self {
             Self {buffer, offset}
         }
 
@@ -13,11 +13,11 @@ pub mod binary {
             self.offset = 0;
         }
 
-        pub fn set_offset(&mut self, offset: u16) {
+        pub fn set_offset(&mut self, offset: u32) {
             self.offset = offset
         }
 
-        pub fn get_offset(&self) -> u16 {
+        pub fn get_offset(&self) -> u32 {
             self.offset
         }
 
@@ -25,7 +25,7 @@ pub mod binary {
             self.buffer.to_vec()
         }
 
-        pub fn get(&mut self, length: u16) -> Result<Vec<u8>, String> {
+        pub fn get(&mut self, length: u32) -> Result<Vec<u8>, String> {
             let end_index: usize = (self.offset + length) as usize;
 
             if end_index <= self.buffer.len() {
@@ -39,7 +39,7 @@ pub mod binary {
 
 
         pub fn get_remaining(&self) -> Result<Vec<u8>, String> {
-            let buff_len = self.buffer.len() as u16;
+            let buff_len = self.buffer.len() as u32;
             if self.offset >= buff_len {
                 return Err(String::from("No bytes left to read")).expect("No bytes left to read");
             }
@@ -446,7 +446,7 @@ pub mod binary {
 
         /// Returns whether the offset has reached the end of the buffer.
         pub fn feof(&self) -> bool {
-            self.offset >= self.buffer.len() as u16
+            self.offset >= self.buffer.len() as u32
         }
     }
 }
