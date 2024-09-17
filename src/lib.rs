@@ -404,34 +404,25 @@ pub mod binary {
         }
 
         pub fn get_unsigned_var_long(&mut self) -> u64 {
-            let bytes = self.get(10);
-
-            match bytes {
-                Ok(byte) => {
-                    let mut value = 0u64;
-                    for i in 0..10 {
-                        let b = byte[i];
-                        value |= ((b & 0x7f) as u64) << (i * 7);
-                        if b & 0x80 == 0 {
-                            return value;
-                        }
-                    }
-                    0
-                }
-                Err(err) => {
-                    println!("Error get_unsigned_var_long(): {}", err);
-                    0
+            let mut value = 0u64;
+            for i in 0..10 {
+                let b = self.get_byte();
+                value |= ((b & 0x7f) as u64) << (i * 7);
+                if b & 0x80 == 0 {
+                    return value;
                 }
             }
+            0
         }
 
         pub fn put_unsigned_var_long(&mut self, mut value: u64) {
             let mut buf = Vec::new();
-            while value > 0x7f {
-                buf.push((value & 0x7f) as u8 | 0x80);
+            while value >= 0x80 {
+                buf.push((value as u8) | 0x80);
                 value >>= 7;
             }
             buf.push(value as u8);
+            self.put(buf);
         }
 
         pub fn get_var_long(&mut self) -> i64 {
