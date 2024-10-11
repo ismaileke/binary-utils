@@ -395,7 +395,9 @@ pub mod binary {
 
         pub fn get_var_int(&mut self) -> i32 {
             let raw: u32 = self.get_unsigned_var_int();
-            ((raw >> 1) as i32) ^ (-((raw & 1) as i32) & 1)
+            let temp = (((raw << 31) as i32) >> 31) as u32 ^ (raw >> 1);
+            (temp ^ (raw & (1 << 31))) as i32
+            //((raw >> 1) as i32) ^ (-((raw & 1) as i32) & 1)
         }
 
         pub fn put_var_int(&mut self, value: i32) {

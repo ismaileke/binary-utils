@@ -7,11 +7,11 @@ mod tests {
 
     #[test]
     fn test() {
-        let mut stream = Stream::new(vec![], 0);
+        println!("{:?}", "167".to_string().into_bytes());
 
-        stream.put_unsigned_var_long(1234456);
-        println!("stream: {:?}", stream.get_buffer());
-        let result = stream.get_unsigned_var_long();
+        let mut stream = Stream::new(vec![49, 54, 55], 0);
+
+        let result = stream.get_var_int();
         println!("result: {}", result);
 
     }
