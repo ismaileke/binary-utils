@@ -9,7 +9,7 @@ mod tests {
     fn test() {
         println!("{:?}", "167".to_string().into_bytes());
 
-        let mut stream = Stream::new(vec![49, 54, 55], 0);
+        let mut stream = Stream::new(vec![19, 54, 55], 0);
 
         let result = stream.get_var_int();
         println!("result: {}", result);
