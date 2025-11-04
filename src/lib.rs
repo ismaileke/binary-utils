@@ -157,6 +157,11 @@ pub mod binary {
             self.buffer.push((value >> 8) as u8);        // High byte
         }
 
+        pub fn put_signed_l_short(&mut self, value: i16) {
+            self.buffer.push((value & 0xFF) as u8);  // Low byte
+            self.buffer.push(((value >> 8) & 0xFF) as u8); // High byte
+        }
+
         pub fn get_triad(&mut self) -> i32 {
             let bytes = self.get(3);
 
