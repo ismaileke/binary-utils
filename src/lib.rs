@@ -69,12 +69,8 @@ pub mod binary {
 
         #[inline]
         pub fn get_bool(&mut self) -> bool {
-            match self.get(1) {
-                Ok(bytes) => bytes[0] != 0,
-                Err(err) => {
-                    panic!("Error get_bool(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(1);
+            bytes[0] != 0
         }
 
         #[inline]
@@ -84,12 +80,8 @@ pub mod binary {
 
         #[inline]
         pub fn get_byte(&mut self) -> u8 {
-            match self.get(1) {
-                Ok(bytes) => bytes[0],
-                Err(err) => {
-                    panic!("Error get_byte(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(1);
+            bytes[0]
         }
 
         #[inline]
@@ -100,22 +92,14 @@ pub mod binary {
         // Big-endian (network byte order)
         #[inline]
         pub fn get_be_unsigned_short(&mut self) -> u16 {
-            match self.get(2) {
-                Ok(bytes) => u16::from_be_bytes([bytes[0], bytes[1]]),
-                Err(err) => {
-                    panic!("Error get_short(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(2);
+            u16::from_be_bytes([bytes[0], bytes[1]])
         }
 
         #[inline]
         pub fn get_be_signed_short(&mut self) -> i16 {
-            match self.get(2) {
-                Ok(bytes) => i16::from_be_bytes([bytes[0], bytes[1]]),
-                Err(err) => {
-                    panic!("Error get_signed_short(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(2);
+            i16::from_be_bytes([bytes[0], bytes[1]])
         }
 
         #[inline]
@@ -131,22 +115,14 @@ pub mod binary {
         // Little-endian
         #[inline]
         pub fn get_le_unsigned_short(&mut self) -> u16 {
-            match self.get(2) {
-                Ok(bytes) => u16::from_le_bytes([bytes[0], bytes[1]]),
-                Err(err) => {
-                    panic!("Error get_l_short(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(2);
+            u16::from_le_bytes([bytes[0], bytes[1]])
         }
 
         #[inline]
         pub fn get_le_signed_short(&mut self) -> i16 {
-            match self.get(2) {
-                Ok(bytes) => i16::from_le_bytes([bytes[0], bytes[1]]),
-                Err(err) => {
-                    panic!("Error get_signed_l_short(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(2);
+            i16::from_le_bytes([bytes[0], bytes[1]])
         }
 
         #[inline]
@@ -162,12 +138,8 @@ pub mod binary {
         // 24-bit integers (Triad) - Big-endian
         #[inline]
         pub fn get_be_triad(&mut self) -> i32 {
-            match self.get(3) {
-                Ok(bytes) => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
-                Err(err) => {
-                    panic!("Error get_triad(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(3);
+            i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]])
         }
 
         #[inline]
@@ -179,12 +151,8 @@ pub mod binary {
         // 24-bit integers (Triad) - Little-endian
         #[inline]
         pub fn get_le_triad(&mut self) -> i32 {
-            match self.get(3) {
-                Ok(bytes) => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0]),
-                Err(err) => {
-                    panic!("Error get_l_triad(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(3);
+            i32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0])
         }
 
         #[inline]
@@ -196,12 +164,8 @@ pub mod binary {
         // 32-bit integers - Big-endian
         #[inline]
         pub fn get_be_unsigned_int(&mut self) -> u32 {
-            match self.get(4) {
-                Ok(bytes) => u32::from_be_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_int(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(4);
+            u32::from_be_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -212,12 +176,8 @@ pub mod binary {
         // 32-bit integers - Little-endian
         #[inline]
         pub fn get_le_unsigned_int(&mut self) -> u32 {
-            match self.get(4) {
-                Ok(bytes) => u32::from_le_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_l_int(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(4);
+            u32::from_le_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -228,12 +188,8 @@ pub mod binary {
         // 32-bit floats - Big-endian
         #[inline]
         pub fn get_be_float(&mut self) -> f32 {
-            match self.get(4) {
-                Ok(bytes) => f32::from_be_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_float(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(4);
+            f32::from_be_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -244,12 +200,8 @@ pub mod binary {
         // 32-bit floats - Little-endian
         #[inline]
         pub fn get_le_float(&mut self) -> f32 {
-            match self.get(4) {
-                Ok(bytes) => f32::from_le_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_l_float(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(4);
+            f32::from_le_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -260,12 +212,8 @@ pub mod binary {
         // 64-bit floats - Big-endian
         #[inline]
         pub fn get_be_double(&mut self) -> f64 {
-            match self.get(8) {
-                Ok(bytes) => f64::from_be_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_double(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(8);
+            f64::from_be_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -276,12 +224,8 @@ pub mod binary {
         // 64-bit floats - Little-endian
         #[inline]
         pub fn get_le_double(&mut self) -> f64 {
-            match self.get(8) {
-                Ok(bytes) => f64::from_le_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_l_double(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(8);
+            f64::from_le_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -292,12 +236,8 @@ pub mod binary {
         // 64-bit integers - Big-endian
         #[inline]
         pub fn get_be_signed_long(&mut self) -> i64 {
-            match self.get(8) {
-                Ok(bytes) => i64::from_be_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_long(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(8);
+            i64::from_be_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -308,12 +248,8 @@ pub mod binary {
         // 64-bit integers - Little-endian
         #[inline]
         pub fn get_le_signed_long(&mut self) -> i64 {
-            match self.get(8) {
-                Ok(bytes) => i64::from_le_bytes(bytes.try_into().unwrap()),
-                Err(err) => {
-                    panic!("Error get_l_long(): Not enough bytes, Error: {:?}", err);
-                }
-            }
+            let bytes = self.get(8);
+            i64::from_le_bytes(bytes.try_into().unwrap())
         }
 
         #[inline]
@@ -384,12 +320,8 @@ pub mod binary {
 
         #[inline]
         pub fn get_var_long(&mut self) -> i64 {
-            match self.get_unsigned_var_long() {
-                Ok(raw) => ((raw >> 1) as i64) ^ (-((raw & 1) as i64)),
-                Err(err) => {
-                    panic!("Error get_var_long(): Failed to read unsigned var long, Error: {:?}", err);
-                }
-            }
+            let raw = self.get_unsigned_var_long();
+            ((raw >> 1) as i64) ^ (-((raw & 1) as i64))
         }
 
         #[inline]
