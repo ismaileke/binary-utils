@@ -58,7 +58,7 @@ pub mod binary {
             if self.offset >= self.buffer.len() as u32 {
                 panic!("Error get_remaining(): No bytes left to read");
             } else {
-                self.buffer[self.offset..].to_vec()
+                self.buffer[(self.offset as usize)..].to_vec()
             }
         }
 
