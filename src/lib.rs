@@ -5,373 +5,323 @@ pub mod binary {
     }
 
     impl Stream {
+        #[inline]
         pub fn new(buffer: Vec<u8>, offset: u32) -> Self {
-            Self {buffer, offset}
+            Self { buffer, offset }
         }
 
+        #[inline]
+        pub fn with_capacity(capacity: usize) -> Self {
+            Self {
+                buffer: Vec::with_capacity(capacity),
+                offset: 0,
+            }
+        }
+
+        #[inline]
         pub fn rewind(&mut self) {
             self.offset = 0;
         }
 
+        #[inline]
         pub fn set_offset(&mut self, offset: u32) {
-            self.offset = offset
+            if offset <= self.buffer.len() as u32 {
+                self.offset = offset;
+            } else {
+                panic!("Offset out of bounds");
+            }
         }
 
+        #[inline]
         pub fn get_offset(&self) -> u32 {
             self.offset
         }
 
-        pub fn get_buffer(&self) -> Vec<u8> {
-            self.buffer.to_vec()
+        #[inline]
+        pub fn get_buffer(&self) -> &[u8] {
+            &self.buffer
         }
 
-        pub fn get(&mut self, length: u32) -> Result<Vec<u8>, String> {
+        pub fn get(&mut self, length: u32) -> Vec<u8> {
             let end_index: usize = (self.offset + length) as usize;
 
             if end_index <= self.buffer.len() {
                 let start_index: usize = self.offset as usize;
                 self.offset += length;
-                Ok(self.buffer[start_index..end_index].to_vec())
+                self.buffer[start_index..end_index].to_vec()
             } else {
-                Err(String::from("The specified range is invalid."))
+                panic!("The specified range is invalid.");
             }
         }
 
-
-        pub fn get_remaining(&self) -> Result<Vec<u8>, String> {
-            let buff_len = self.buffer.len() as u32;
-            if self.offset >= buff_len {
-                return Err(String::from("No bytes left to read")).expect("No bytes left to read");
+        pub fn get_remaining(&self) -> Vec<u8> {
+            if self.offset >= self.buffer.len() as u32 {
+                panic!("Error get_remaining(): No bytes left to read");
+            } else {
+                self.buffer[self.offset..].to_vec()
             }
-            Ok(self.buffer[(self.offset as usize)..].to_vec())
         }
 
+        #[inline]
         pub fn put(&mut self, value: Vec<u8>) {
             self.buffer.extend(value);
         }
 
+        #[inline]
         pub fn get_bool(&mut self) -> bool {
-            let byte = self.get(1);
-            match byte {
-                Ok(b) => {
-                    b[0] != 0
-                }
+            match self.get(1) {
+                Ok(bytes) => bytes[0] != 0,
                 Err(err) => {
-                    println!("Error get_bool(): {}", err);
-                    false
+                    panic!("Error get_bool(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
+        #[inline]
         pub fn put_bool(&mut self, value: bool) {
-            let byte = if value { 0x01 } else { 0x00 };
-            self.buffer.push(byte);
+            self.buffer.push(if value { 0x01 } else { 0x00 });
         }
 
+        #[inline]
         pub fn get_byte(&mut self) -> u8 {
-            let byte = self.get(1);
-            match byte {
-                Ok(b) => {
-                    b[0]
-                }
+            match self.get(1) {
+                Ok(bytes) => bytes[0],
                 Err(err) => {
-                    println!("Error get_byte(): {}", err);
-                    0
+                    panic!("Error get_byte(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
+        #[inline]
         pub fn put_byte(&mut self, value: u8) {
             self.buffer.push(value);
         }
 
-        pub fn get_short(&mut self) -> u16 {
-            let bytes = self.get(2);
-
-
-            match bytes {
-                Ok(byte) => {
-                    let high_byte = byte[0] as u16;
-                    let low_byte = byte[1] as u16;
-                    (high_byte << 8) | low_byte
-                }
+        // Big-endian (network byte order)
+        #[inline]
+        pub fn get_be_unsigned_short(&mut self) -> u16 {
+            match self.get(2) {
+                Ok(bytes) => u16::from_be_bytes([bytes[0], bytes[1]]),
                 Err(err) => {
-                    println!("Error get_short(): {}", err);
-                    0
+                    panic!("Error get_short(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn get_signed_short(&mut self) -> i16 {
-            let bytes = self.get(2);
-            match bytes {
-                Ok(byte) => {
-                    i16::from_le_bytes([byte[0], byte[1]])
-                }
+        #[inline]
+        pub fn get_be_signed_short(&mut self) -> i16 {
+            match self.get(2) {
+                Ok(bytes) => i16::from_be_bytes([bytes[0], bytes[1]]),
                 Err(err) => {
-                    println!("Error get_signed_short(): {}", err);
-                    0
+                    panic!("Error get_signed_short(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_short(&mut self, value: u16) {
-            self.buffer.push((value >> 8) as u8);
-            self.buffer.push((value & 0xFF) as u8);
+        #[inline]
+        pub fn put_be_unsigned_short(&mut self, value: u16) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_short(&mut self) -> u16 {
-            let bytes = self.get(2);
+        #[inline]
+        pub fn put_be_signed_short(&mut self, value: i16) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
+        }
 
-            match bytes {
-                Ok(byte) => {
-                    let low_byte = byte[0] as u16;
-                    let high_byte = byte[1] as u16;
-                    low_byte | (high_byte << 8)
-                }
+        // Little-endian
+        #[inline]
+        pub fn get_le_unsigned_short(&mut self) -> u16 {
+            match self.get(2) {
+                Ok(bytes) => u16::from_le_bytes([bytes[0], bytes[1]]),
                 Err(err) => {
-                    println!("Error get_l_short(): {}", err);
-                    0
+                    panic!("Error get_l_short(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn get_signed_l_short(&mut self) -> i16 {
-            let bytes = self.get(2);
-
-            match bytes {
-                Ok(byte) => {
-                    let low_byte = byte[0] as i16;
-                    let high_byte = byte[1] as i16;
-                    (high_byte << 8) | low_byte
-                }
+        #[inline]
+        pub fn get_le_signed_short(&mut self) -> i16 {
+            match self.get(2) {
+                Ok(bytes) => i16::from_le_bytes([bytes[0], bytes[1]]),
                 Err(err) => {
-                    println!("Error get_signed_l_short(): {}", err);
-                    0
+                    panic!("Error get_signed_l_short(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_l_short(&mut self, value: u16) {
-            self.buffer.push((value & 0xFF) as u8);       // Low byte
-            self.buffer.push((value >> 8) as u8);        // High byte
+        #[inline]
+        pub fn put_le_unsigned_short(&mut self, value: u16) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn put_signed_l_short(&mut self, value: i16) {
-            self.buffer.push((value & 0xFF) as u8);  // Low byte
-            self.buffer.push(((value >> 8) & 0xFF) as u8); // High byte
+        #[inline]
+        pub fn put_le_signed_short(&mut self, value: i16) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_triad(&mut self) -> i32 {
-            let bytes = self.get(3);
-
-            match bytes {
-                Ok(byte) => {
-                    ((byte[0] as i32) << 16) | ((byte[1] as i32) << 8) | (byte[2] as i32)
-                }
+        // 24-bit integers (Triad) - Big-endian
+        #[inline]
+        pub fn get_be_triad(&mut self) -> i32 {
+            match self.get(3) {
+                Ok(bytes) => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
                 Err(err) => {
-                    println!("Error get_triad(): {}", err);
-                    0
+                    panic!("Error get_triad(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_triad(&mut self, value: i32) {
-            self.buffer.push(((value >> 16) & 0xFF) as u8);
-            self.buffer.push(((value >> 8) & 0xFF) as u8);
-            self.buffer.push((value & 0xFF) as u8);
+        #[inline]
+        pub fn put_be_triad(&mut self, value: i32) {
+            let bytes = value.to_be_bytes();
+            self.buffer.extend_from_slice(&bytes[1..4]);
         }
 
-        pub fn get_l_triad(&mut self) -> i32 {
-            let bytes = self.get(3);
-
-            match bytes {
-                Ok(byte) => {
-                    (byte[0] as i32) | ((byte[1] as i32) << 8) | ((byte[2] as i32) << 16)
-                }
+        // 24-bit integers (Triad) - Little-endian
+        #[inline]
+        pub fn get_le_triad(&mut self) -> i32 {
+            match self.get(3) {
+                Ok(bytes) => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0]),
                 Err(err) => {
-                    println!("Error get_l_triad(): {}", err);
-                    0
+                    panic!("Error get_l_triad(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_l_triad(&mut self, value: i32) {
-            self.buffer.push((value & 0xFF) as u8);
-            self.buffer.push(((value >> 8) & 0xFF) as u8);
-            self.buffer.push(((value >> 16) & 0xFF) as u8);
+        #[inline]
+        pub fn put_le_triad(&mut self, value: i32) {
+            let bytes = value.to_le_bytes();
+            self.buffer.extend_from_slice(&bytes[0..3]);
         }
 
-        pub fn get_int(&mut self) -> u32 {
-            let bytes = self.get(4);
-            match bytes {
-                Ok(byte) => {
-                    u32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
+        // 32-bit integers - Big-endian
+        #[inline]
+        pub fn get_be_unsigned_int(&mut self) -> u32 {
+            match self.get(4) {
+                Ok(bytes) => u32::from_be_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_int(): {}", err);
-                    0
+                    panic!("Error get_int(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_int(&mut self, value: u32) {
-            let bytes: [u8; 4] = value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_be_unsigned_int(&mut self, value: u32) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_int(&mut self) -> u32 {
-            let bytes = self.get(4);
-            match bytes {
-                Ok(byte) => {
-                    u32::from_le_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
+        // 32-bit integers - Little-endian
+        #[inline]
+        pub fn get_le_unsigned_int(&mut self) -> u32 {
+            match self.get(4) {
+                Ok(bytes) => u32::from_le_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_l_int(): {}", err);
-                    0
+                    panic!("Error get_l_int(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_l_int(&mut self, value: u32) {
-            let bytes: [u8; 4] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_le_unsigned_int(&mut self, value: u32) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_float(&mut self) -> f32 {
-            let bytes = self.get(4);
-
-            match bytes {
-                Ok(byte) => {
-                    f32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
+        // 32-bit floats - Big-endian
+        #[inline]
+        pub fn get_be_float(&mut self) -> f32 {
+            match self.get(4) {
+                Ok(bytes) => f32::from_be_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_float(): {}", err);
-                    0.0
+                    panic!("Error get_float(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        /*pub fn get_rounded_float(&mut self, accuracy: usize) -> Result<f32, String> {
-            let bytes = self.get(4);
-
-            match bytes {
-                Ok(byte) => {
-                    f32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
-                Err(err) => {
-                    println!("Error get_int(): {}", err);
-                    0.0
-                }
-            }
-            Self::read_rounded_float(&bytes, accuracy)
-        }*/
-        /* fn get_rounded_l_float(&mut self, accuracy: usize) -> f32 {
-            let bytes = self.get(4)?; // Get 4 bytes from the stream
-            let value = Self::read_lfloat(bytes)?;
-            Ok((value * 10f32.powf(accuracy as f32)).round() / 10f32.powf(accuracy as f32))
-        }*/
-
-        pub fn put_float(&mut self, value: f32) {
-            let bytes: [u8; 4] = value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_be_float(&mut self, value: f32) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_float(&mut self) -> f32 {
-            let bytes = self.get(4);
-
-            match bytes {
-                Ok(byte) => {
-                    f32::from_le_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
+        // 32-bit floats - Little-endian
+        #[inline]
+        pub fn get_le_float(&mut self) -> f32 {
+            match self.get(4) {
+                Ok(bytes) => f32::from_le_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_l_float(): {}", err);
-                    0.0
+                    panic!("Error get_l_float(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_l_float(&mut self, value: f32) {
-            let bytes: [u8; 4] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_le_float(&mut self, value: f32) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_double(&mut self) -> f64 {
-            let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    f64::from_be_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
+        // 64-bit floats - Big-endian
+        #[inline]
+        pub fn get_be_double(&mut self) -> f64 {
+            match self.get(8) {
+                Ok(bytes) => f64::from_be_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_double(): {}", err);
-                    0.0
+                    panic!("Error get_double(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_double(&mut self, value: f64) {
-            let bytes: [u8; 8] =  value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_be_double(&mut self, value: f64) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_double(&mut self) -> f64 {
-            let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    f64::from_le_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
+        // 64-bit floats - Little-endian
+        #[inline]
+        pub fn get_le_double(&mut self) -> f64 {
+            match self.get(8) {
+                Ok(bytes) => f64::from_le_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_l_double(): {}", err);
-                    0.0
+                    panic!("Error get_l_double(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_l_double(&mut self, value: f64) {
-            let bytes: [u8; 8] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_le_double(&mut self, value: f64) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_long(&mut self) -> i64 {
-            let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    i64::from_be_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
+        // 64-bit integers - Big-endian
+        #[inline]
+        pub fn get_be_signed_long(&mut self) -> i64 {
+            match self.get(8) {
+                Ok(bytes) => i64::from_be_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_long(): {}", err);
-                    0
+                    panic!("Error get_long(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_long(&mut self, value: i64) {
-            let bytes: [u8; 8] = value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_be_signed_long(&mut self, value: i64) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_long(&mut self) -> i64 {
-            let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    i64::from_le_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
+        // 64-bit integers - Little-endian
+        #[inline]
+        pub fn get_le_signed_long(&mut self) -> i64 {
+            match self.get(8) {
+                Ok(bytes) => i64::from_le_bytes(bytes.try_into().unwrap()),
                 Err(err) => {
-                    println!("Error get_l_long(): {}", err);
-                    0
+                    panic!("Error get_l_long(): Not enough bytes, Error: {:?}", err);
                 }
             }
         }
 
-        pub fn put_l_long(&mut self, value: i64) {
-            let bytes: [u8; 8] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        #[inline]
+        pub fn put_le_signed_long(&mut self, value: i64) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
+        // Variable-length integers
         pub fn get_unsigned_var_int(&mut self) -> u32 {
             let mut value = 0u32;
             for i in 0..5 {
@@ -381,32 +331,31 @@ pub mod binary {
                     return value;
                 }
             }
-            println!("Error get_unsigned_var_int()");
-            0
+            panic!("VarInt did not terminate after 5 bytes!");
         }
 
         pub fn put_unsigned_var_int(&mut self, mut value: u32) {
-            for _ in 0..5 {
-                if (value >> 7) != 0{
-                    self.buffer.push((value | 0x80) as u8);
-                }else{
-                    self.buffer.push((value & 0x7f) as u8);
-                    return;
+            loop {
+                if value >= 0x80 {
+                    self.buffer.push((value as u8) | 0x80);
+                    value >>= 7;
+                } else {
+                    self.buffer.push(value as u8);
+                    break;
                 }
-
-                value = value >> 7;
             }
         }
 
+        #[inline]
         pub fn get_var_int(&mut self) -> i32 {
-            let raw: u32 = self.get_unsigned_var_int();
+            let raw = self.get_unsigned_var_int();
             ((raw >> 1) as i32) ^ -((raw & 1) as i32)
-
         }
 
+        #[inline]
         pub fn put_var_int(&mut self, value: i32) {
-            let value: i32 = (value << 1) ^ (value >> 31);
-            self.put_unsigned_var_int(value as u32);
+            let encoded = ((value << 1) ^ (value >> 31)) as u32;
+            self.put_unsigned_var_int(encoded);
         }
 
         pub fn get_unsigned_var_long(&mut self) -> u64 {
@@ -418,30 +367,38 @@ pub mod binary {
                     return value;
                 }
             }
-            0
+            panic!("VarLong did not terminate after 10 bytes!");
         }
 
         pub fn put_unsigned_var_long(&mut self, mut value: u64) {
-            let mut buf = Vec::new();
-            while value >= 0x80 {
-                buf.push((value as u8) | 0x80);
-                value >>= 7;
+            loop {
+                if value >= 0x80 {
+                    self.buffer.push((value as u8) | 0x80);
+                    value >>= 7;
+                } else {
+                    self.buffer.push(value as u8);
+                    break;
+                }
             }
-            buf.push(value as u8);
-            self.put(buf);
         }
 
+        #[inline]
         pub fn get_var_long(&mut self) -> i64 {
-            let raw = self.get_unsigned_var_long();
-            (((raw << 63) >> 63) ^ raw >> 1 ^ (raw & (1 << 63))) as i64
+            match self.get_unsigned_var_long() {
+                Ok(raw) => ((raw >> 1) as i64) ^ (-((raw & 1) as i64)),
+                Err(err) => {
+                    panic!("Error get_var_long(): Failed to read unsigned var long, Error: {:?}", err);
+                }
+            }
         }
 
+        #[inline]
         pub fn put_var_long(&mut self, value: i64) {
-            let value: i64 = (value << 1) ^ (value >> 63);
-            self.put_unsigned_var_long(value as u64);
+            let encoded = ((value << 1) ^ (value >> 63)) as u64;
+            self.put_unsigned_var_long(encoded);
         }
 
-        /// Returns whether the offset has reached the end of the buffer.
+        #[inline]
         pub fn feof(&self) -> bool {
             self.offset >= self.buffer.len() as u32
         }
