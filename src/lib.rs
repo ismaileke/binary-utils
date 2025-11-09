@@ -256,6 +256,30 @@ pub mod binary {
         pub fn put_le_signed_long(&mut self, value: i64) {
             self.buffer.extend_from_slice(&value.to_le_bytes());
         }
+        
+        // 64-bit unsigned integers - Big-endian
+        #[inline]
+        pub fn get_be_unsigned_long(&mut self) -> u64 {
+            let bytes = self.get(8);
+            u64::from_be_bytes(bytes.try_into().unwrap())
+        }
+
+        #[inline]
+        pub fn put_be_unsigned_long(&mut self, value: u64) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
+        }
+
+        // 64-bit unsigned integers - Little-endian
+        #[inline]
+        pub fn get_le_unsigned_long(&mut self) -> u64 {
+            let bytes = self.get(8);
+            u64::from_le_bytes(bytes.try_into().unwrap())
+        }
+
+        #[inline]
+        pub fn put_le_unsigned_long(&mut self, value: u64) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
+        }
 
         // Variable-length integers
         pub fn get_unsigned_var_int(&mut self) -> u32 {
