@@ -11,7 +11,7 @@ mod tests {
 
         let mut stream = Stream::new(vec![19, 54, 55], 0);
 
-        let result = stream.get_var_int();
+        let result = stream.get_i24_le();
         println!("result: {}", result);
 
     }
