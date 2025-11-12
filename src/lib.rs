@@ -2,10 +2,10 @@ pub mod binary {
     /// A binary stream for reading and writing primitive types
     /// in both big-endian and little-endian byte order.
     ///
-    /// Commonly used for Minecraft Bedrock protocol data.
+    /// Commonly used for RakNet & Minecraft Bedrock protocol data.
     pub struct Stream {
         buffer: Vec<u8>,
-        offset: u32,
+        offset: u32
     }
 
     impl Stream {
@@ -28,6 +28,12 @@ pub mod binary {
         #[inline]
         pub fn rewind(&mut self) {
             self.offset = 0;
+        }
+
+        /// Returns `true` if the stream has reached the end of the buffer.
+        #[inline]
+        pub fn feof(&self) -> bool {
+            self.offset >= self.buffer.len() as u32
         }
 
         /// Sets the read/write offset.
@@ -111,7 +117,7 @@ pub mod binary {
             self.buffer.push(value);
         }
 
-        // ===== 16-bit integers =====
+        // ===== 16-bit (short) integers =====
 
         /// Reads an unsigned 16-bit integer (big-endian).
         #[inline]
@@ -195,6 +201,34 @@ pub mod binary {
             self.buffer.extend_from_slice(&bytes[0..3]);
         }
 
+        /// Reads a 24-bit unsigned integer (big-endian).
+        #[inline]
+        pub fn get_u24_be(&mut self) -> u32 {
+            let bytes = self.get(3);
+            u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]])
+        }
+
+        /// Writes a 24-bit unsigned integer (big-endian).
+        #[inline]
+        pub fn put_u24_be(&mut self, value: u32) {
+            let bytes = value.to_be_bytes();
+            self.buffer.extend_from_slice(&bytes[1..4]);
+        }
+
+        /// Reads a 24-bit unsigned integer (little-endian).
+        #[inline]
+        pub fn get_u24_le(&mut self) -> u32 {
+            let bytes = self.get(3);
+            u32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0])
+        }
+
+        /// Writes a 24-bit unsigned integer (little-endian).
+        #[inline]
+        pub fn put_u24_le(&mut self, value: u32) {
+            let bytes = value.to_le_bytes();
+            self.buffer.extend_from_slice(&bytes[0..3]);
+        }
+
         // ===== 32-bit integers =====
 
         /// Reads an unsigned 32-bit integer (big-endian).
@@ -220,6 +254,32 @@ pub mod binary {
         /// Writes an unsigned 32-bit integer (little-endian).
         #[inline]
         pub fn put_u32_le(&mut self, value: u32) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
+        }
+
+        /// Reads a signed 32-bit integer (big-endian).
+        #[inline]
+        pub fn get_i32_be(&mut self) -> i32 {
+            let bytes = self.get(4);
+            i32::from_be_bytes(bytes.try_into().unwrap())
+        }
+
+        /// Writes a signed 32-bit integer (big-endian).
+        #[inline]
+        pub fn put_i32_be(&mut self, value: i32) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
+        }
+
+        /// Reads a signed 32-bit integer (little-endian).
+        #[inline]
+        pub fn get_i32_le(&mut self) -> i32 {
+            let bytes = self.get(4);
+            i32::from_le_bytes(bytes.try_into().unwrap())
+        }
+
+        /// Writes a signed 32-bit integer (little-endian).
+        #[inline]
+        pub fn put_i32_le(&mut self, value: i32) {
             self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
@@ -413,12 +473,6 @@ pub mod binary {
         pub fn put_var_i64(&mut self, value: i64) {
             let encoded = ((value << 1) ^ (value >> 63)) as u64;
             self.put_var_u64(encoded);
-        }
-
-        /// Returns `true` if the stream has reached the end of the buffer.
-        #[inline]
-        pub fn feof(&self) -> bool {
-            self.offset >= self.buffer.len() as u32
         }
     }
 }
