@@ -1,378 +1,342 @@
 pub mod binary {
+    /// A binary stream for reading and writing primitive types
+    /// in both big-endian and little-endian byte order.
+    ///
+    /// Commonly used for Minecraft Bedrock protocol data.
     pub struct Stream {
         buffer: Vec<u8>,
         offset: u32,
     }
 
     impl Stream {
+        /// Creates a new stream from an existing buffer and offset.
+        #[inline]
         pub fn new(buffer: Vec<u8>, offset: u32) -> Self {
-            Self {buffer, offset}
+            Self { buffer, offset }
         }
 
+        /// Creates an empty stream with a specified capacity.
+        #[inline]
+        pub fn with_capacity(capacity: usize) -> Self {
+            Self {
+                buffer: Vec::with_capacity(capacity),
+                offset: 0,
+            }
+        }
+
+        /// Resets the stream offset to the beginning.
+        #[inline]
         pub fn rewind(&mut self) {
             self.offset = 0;
         }
 
+        /// Sets the read/write offset.
+        ///
+        /// Panics if the offset is greater than the buffer length.
+        #[inline]
         pub fn set_offset(&mut self, offset: u32) {
-            self.offset = offset
+            if offset <= self.buffer.len() as u32 {
+                self.offset = offset;
+            } else {
+                panic!("Offset out of bounds");
+            }
         }
 
+        /// Returns the current read/write offset.
+        #[inline]
         pub fn get_offset(&self) -> u32 {
             self.offset
         }
 
-        pub fn get_buffer(&self) -> Vec<u8> {
-            self.buffer.to_vec()
+        /// Returns the entire buffer as a byte slice.
+        #[inline]
+        pub fn get_buffer(&self) -> &[u8] {
+            &self.buffer
         }
 
-        pub fn get(&mut self, length: u32) -> Result<Vec<u8>, String> {
+        /// Reads a specific number of bytes and advances the offset.
+        ///
+        /// Panics if there are not enough bytes remaining.
+        pub fn get(&mut self, length: u32) -> Vec<u8> {
             let end_index: usize = (self.offset + length) as usize;
 
             if end_index <= self.buffer.len() {
                 let start_index: usize = self.offset as usize;
                 self.offset += length;
-                Ok(self.buffer[start_index..end_index].to_vec())
+                self.buffer[start_index..end_index].to_vec()
             } else {
-                Err(String::from("The specified range is invalid."))
+                panic!("The specified range is invalid.");
             }
         }
 
-
-        pub fn get_remaining(&self) -> Result<Vec<u8>, String> {
-            let buff_len = self.buffer.len() as u32;
-            if self.offset >= buff_len {
-                return Err(String::from("No bytes left to read")).expect("No bytes left to read");
+        /// Returns the remaining unread bytes.
+        ///
+        /// Panics if the stream is already at EOF.
+        pub fn get_remaining(&self) -> Vec<u8> {
+            if self.offset >= self.buffer.len() as u32 {
+                panic!("Error get_remaining(): No bytes left to read");
+            } else {
+                self.buffer[(self.offset as usize)..].to_vec()
             }
-            Ok(self.buffer[(self.offset as usize)..].to_vec())
         }
 
+        /// Writes a raw byte vector to the buffer.
+        #[inline]
         pub fn put(&mut self, value: Vec<u8>) {
             self.buffer.extend(value);
         }
 
+        /// Reads a single byte and returns `true` if it’s nonzero.
+        #[inline]
         pub fn get_bool(&mut self) -> bool {
-            let byte = self.get(1);
-            match byte {
-                Ok(b) => {
-                    b[0] != 0
-                }
-                Err(err) => {
-                    println!("Error get_bool(): {}", err);
-                    false
-                }
-            }
+            let bytes = self.get(1);
+            bytes[0] != 0
         }
 
+        /// Writes a boolean value (`0x01` for true, `0x00` for false).
+        #[inline]
         pub fn put_bool(&mut self, value: bool) {
-            let byte = if value { 0x01 } else { 0x00 };
-            self.buffer.push(byte);
+            self.buffer.push(if value { 0x01 } else { 0x00 });
         }
 
+        /// Reads a single unsigned byte.
+        #[inline]
         pub fn get_byte(&mut self) -> u8 {
-            let byte = self.get(1);
-            match byte {
-                Ok(b) => {
-                    b[0]
-                }
-                Err(err) => {
-                    println!("Error get_byte(): {}", err);
-                    0
-                }
-            }
+            self.get(1)[0]
         }
 
+        /// Writes a single unsigned byte.
+        #[inline]
         pub fn put_byte(&mut self, value: u8) {
             self.buffer.push(value);
         }
 
-        pub fn get_short(&mut self) -> u16 {
+        // ===== 16-bit integers =====
+
+        /// Reads an unsigned 16-bit integer (big-endian).
+        #[inline]
+        pub fn get_u16_be(&mut self) -> u16 {
             let bytes = self.get(2);
-
-
-            match bytes {
-                Ok(byte) => {
-                    let high_byte = byte[0] as u16;
-                    let low_byte = byte[1] as u16;
-                    (high_byte << 8) | low_byte
-                }
-                Err(err) => {
-                    println!("Error get_short(): {}", err);
-                    0
-                }
-            }
+            u16::from_be_bytes([bytes[0], bytes[1]])
         }
 
-        pub fn get_signed_short(&mut self) -> i16 {
+        /// Reads a signed 16-bit integer (big-endian).
+        #[inline]
+        pub fn get_i16_be(&mut self) -> i16 {
             let bytes = self.get(2);
-            match bytes {
-                Ok(byte) => {
-                    i16::from_le_bytes([byte[0], byte[1]])
-                }
-                Err(err) => {
-                    println!("Error get_signed_short(): {}", err);
-                    0
-                }
-            }
+            i16::from_be_bytes([bytes[0], bytes[1]])
         }
 
-        pub fn put_short(&mut self, value: u16) {
-            self.buffer.push((value >> 8) as u8);
-            self.buffer.push((value & 0xFF) as u8);
+        /// Writes an unsigned 16-bit integer (big-endian).
+        #[inline]
+        pub fn put_u16_be(&mut self, value: u16) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_short(&mut self) -> u16 {
+        /// Writes a signed 16-bit integer (big-endian).
+        #[inline]
+        pub fn put_i16_be(&mut self, value: i16) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
+        }
+
+        /// Reads an unsigned 16-bit integer (little-endian).
+        #[inline]
+        pub fn get_u16_le(&mut self) -> u16 {
             let bytes = self.get(2);
-
-            match bytes {
-                Ok(byte) => {
-                    let low_byte = byte[0] as u16;
-                    let high_byte = byte[1] as u16;
-                    low_byte | (high_byte << 8)
-                }
-                Err(err) => {
-                    println!("Error get_l_short(): {}", err);
-                    0
-                }
-            }
+            u16::from_le_bytes([bytes[0], bytes[1]])
         }
 
-        pub fn get_signed_l_short(&mut self) -> i16 {
+        /// Reads a signed 16-bit integer (little-endian).
+        #[inline]
+        pub fn get_i16_le(&mut self) -> i16 {
             let bytes = self.get(2);
-
-            match bytes {
-                Ok(byte) => {
-                    let low_byte = byte[0] as i16;
-                    let high_byte = byte[1] as i16;
-                    (high_byte << 8) | low_byte
-                }
-                Err(err) => {
-                    println!("Error get_signed_l_short(): {}", err);
-                    0
-                }
-            }
+            i16::from_le_bytes([bytes[0], bytes[1]])
         }
 
-        pub fn put_l_short(&mut self, value: u16) {
-            self.buffer.push((value & 0xFF) as u8);       // Low byte
-            self.buffer.push((value >> 8) as u8);        // High byte
+        /// Writes an unsigned 16-bit integer (little-endian).
+        #[inline]
+        pub fn put_u16_le(&mut self, value: u16) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn put_signed_l_short(&mut self, value: i16) {
-            self.buffer.push((value & 0xFF) as u8);  // Low byte
-            self.buffer.push(((value >> 8) & 0xFF) as u8); // High byte
+        /// Writes a signed 16-bit integer (little-endian).
+        #[inline]
+        pub fn put_i16_le(&mut self, value: i16) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_triad(&mut self) -> i32 {
+        // ===== 24-bit (triad) integers =====
+
+        /// Reads a 24-bit signed integer (big-endian).
+        #[inline]
+        pub fn get_i24_be(&mut self) -> i32 {
             let bytes = self.get(3);
-
-            match bytes {
-                Ok(byte) => {
-                    ((byte[0] as i32) << 16) | ((byte[1] as i32) << 8) | (byte[2] as i32)
-                }
-                Err(err) => {
-                    println!("Error get_triad(): {}", err);
-                    0
-                }
-            }
+            i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]])
         }
 
-        pub fn put_triad(&mut self, value: i32) {
-            self.buffer.push(((value >> 16) & 0xFF) as u8);
-            self.buffer.push(((value >> 8) & 0xFF) as u8);
-            self.buffer.push((value & 0xFF) as u8);
+        /// Writes a 24-bit signed integer (big-endian).
+        #[inline]
+        pub fn put_i24_be(&mut self, value: i32) {
+            let bytes = value.to_be_bytes();
+            self.buffer.extend_from_slice(&bytes[1..4]);
         }
 
-        pub fn get_l_triad(&mut self) -> i32 {
+        /// Reads a 24-bit signed integer (little-endian).
+        #[inline]
+        pub fn get_i24_le(&mut self) -> i32 {
             let bytes = self.get(3);
-
-            match bytes {
-                Ok(byte) => {
-                    (byte[0] as i32) | ((byte[1] as i32) << 8) | ((byte[2] as i32) << 16)
-                }
-                Err(err) => {
-                    println!("Error get_l_triad(): {}", err);
-                    0
-                }
-            }
+            i32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0])
         }
 
-        pub fn put_l_triad(&mut self, value: i32) {
-            self.buffer.push((value & 0xFF) as u8);
-            self.buffer.push(((value >> 8) & 0xFF) as u8);
-            self.buffer.push(((value >> 16) & 0xFF) as u8);
+        /// Writes a 24-bit signed integer (little-endian).
+        #[inline]
+        pub fn put_i24_le(&mut self, value: i32) {
+            let bytes = value.to_le_bytes();
+            self.buffer.extend_from_slice(&bytes[0..3]);
         }
 
-        pub fn get_int(&mut self) -> u32 {
+        // ===== 32-bit integers =====
+
+        /// Reads an unsigned 32-bit integer (big-endian).
+        #[inline]
+        pub fn get_u32_be(&mut self) -> u32 {
             let bytes = self.get(4);
-            match bytes {
-                Ok(byte) => {
-                    u32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
-                Err(err) => {
-                    println!("Error get_int(): {}", err);
-                    0
-                }
-            }
+            u32::from_be_bytes(bytes.try_into().unwrap())
         }
 
-        pub fn put_int(&mut self, value: u32) {
-            let bytes: [u8; 4] = value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        /// Writes an unsigned 32-bit integer (big-endian).
+        #[inline]
+        pub fn put_u32_be(&mut self, value: u32) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_int(&mut self) -> u32 {
+        /// Reads an unsigned 32-bit integer (little-endian).
+        #[inline]
+        pub fn get_u32_le(&mut self) -> u32 {
             let bytes = self.get(4);
-            match bytes {
-                Ok(byte) => {
-                    u32::from_le_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
-                Err(err) => {
-                    println!("Error get_l_int(): {}", err);
-                    0
-                }
-            }
+            u32::from_le_bytes(bytes.try_into().unwrap())
         }
 
-        pub fn put_l_int(&mut self, value: u32) {
-            let bytes: [u8; 4] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        /// Writes an unsigned 32-bit integer (little-endian).
+        #[inline]
+        pub fn put_u32_le(&mut self, value: u32) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_float(&mut self) -> f32 {
+        // ===== 32-bit floats =====
+
+        /// Reads a 32-bit floating-point number (big-endian).
+        #[inline]
+        pub fn get_f32_be(&mut self) -> f32 {
             let bytes = self.get(4);
-
-            match bytes {
-                Ok(byte) => {
-                    f32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
-                Err(err) => {
-                    println!("Error get_float(): {}", err);
-                    0.0
-                }
-            }
+            f32::from_be_bytes(bytes.try_into().unwrap())
         }
 
-        /*pub fn get_rounded_float(&mut self, accuracy: usize) -> Result<f32, String> {
+        /// Writes a 32-bit floating-point number (big-endian).
+        #[inline]
+        pub fn put_f32_be(&mut self, value: f32) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
+        }
+
+        /// Reads a 32-bit floating-point number (little-endian).
+        #[inline]
+        pub fn get_f32_le(&mut self) -> f32 {
             let bytes = self.get(4);
-
-            match bytes {
-                Ok(byte) => {
-                    f32::from_be_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
-                Err(err) => {
-                    println!("Error get_int(): {}", err);
-                    0.0
-                }
-            }
-            Self::read_rounded_float(&bytes, accuracy)
-        }*/
-        /* fn get_rounded_l_float(&mut self, accuracy: usize) -> f32 {
-            let bytes = self.get(4)?; // Get 4 bytes from the stream
-            let value = Self::read_lfloat(bytes)?;
-            Ok((value * 10f32.powf(accuracy as f32)).round() / 10f32.powf(accuracy as f32))
-        }*/
-
-        pub fn put_float(&mut self, value: f32) {
-            let bytes: [u8; 4] = value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+            f32::from_le_bytes(bytes.try_into().unwrap())
         }
 
-        pub fn get_l_float(&mut self) -> f32 {
-            let bytes = self.get(4);
-
-            match bytes {
-                Ok(byte) => {
-                    f32::from_le_bytes([byte[0], byte[1], byte[2], byte[3]])
-                }
-                Err(err) => {
-                    println!("Error get_l_float(): {}", err);
-                    0.0
-                }
-            }
+        /// Writes a 32-bit floating-point number (little-endian).
+        #[inline]
+        pub fn put_f32_le(&mut self, value: f32) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn put_l_float(&mut self, value: f32) {
-            let bytes: [u8; 4] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
-        }
+        // ===== 64-bit floats =====
 
-        pub fn get_double(&mut self) -> f64 {
+        /// Reads a 64-bit double-precision float (big-endian).
+        #[inline]
+        pub fn get_f64_be(&mut self) -> f64 {
             let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    f64::from_be_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
-                Err(err) => {
-                    println!("Error get_double(): {}", err);
-                    0.0
-                }
-            }
+            f64::from_be_bytes(bytes.try_into().unwrap())
         }
 
-        pub fn put_double(&mut self, value: f64) {
-            let bytes: [u8; 8] =  value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        /// Writes a 64-bit double-precision float (big-endian).
+        #[inline]
+        pub fn put_f64_be(&mut self, value: f64) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_double(&mut self) -> f64 {
+        /// Reads a 64-bit double-precision float (little-endian).
+        #[inline]
+        pub fn get_f64_le(&mut self) -> f64 {
             let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    f64::from_le_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
-                Err(err) => {
-                    println!("Error get_l_double(): {}", err);
-                    0.0
-                }
-            }
+            f64::from_le_bytes(bytes.try_into().unwrap())
         }
 
-        pub fn put_l_double(&mut self, value: f64) {
-            let bytes: [u8; 8] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        /// Writes a 64-bit double-precision float (little-endian).
+        #[inline]
+        pub fn put_f64_le(&mut self, value: f64) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_long(&mut self) -> i64 {
+        // ===== 64-bit integers =====
+
+        /// Reads a signed 64-bit integer (big-endian).
+        #[inline]
+        pub fn get_i64_be(&mut self) -> i64 {
             let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    i64::from_be_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
-                Err(err) => {
-                    println!("Error get_long(): {}", err);
-                    0
-                }
-            }
+            i64::from_be_bytes(bytes.try_into().unwrap())
         }
 
-        pub fn put_long(&mut self, value: i64) {
-            let bytes: [u8; 8] = value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        /// Writes a signed 64-bit integer (big-endian).
+        #[inline]
+        pub fn put_i64_be(&mut self, value: i64) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
         }
 
-        pub fn get_l_long(&mut self) -> i64 {
+        /// Reads a signed 64-bit integer (little-endian).
+        #[inline]
+        pub fn get_i64_le(&mut self) -> i64 {
             let bytes = self.get(8);
-
-            match bytes {
-                Ok(byte) => {
-                    i64::from_le_bytes([byte[0], byte[1], byte[2], byte[3], byte[4], byte[5], byte[6], byte[7]])
-                }
-                Err(err) => {
-                    println!("Error get_l_long(): {}", err);
-                    0
-                }
-            }
+            i64::from_le_bytes(bytes.try_into().unwrap())
         }
 
-        pub fn put_l_long(&mut self, value: i64) {
-            let bytes: [u8; 8] = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes);
+        /// Writes a signed 64-bit integer (little-endian).
+        #[inline]
+        pub fn put_i64_le(&mut self, value: i64) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
         }
 
-        pub fn get_unsigned_var_int(&mut self) -> u32 {
+        /// Reads an unsigned 64-bit integer (big-endian).
+        #[inline]
+        pub fn get_u64_be(&mut self) -> u64 {
+            let bytes = self.get(8);
+            u64::from_be_bytes(bytes.try_into().unwrap())
+        }
+
+        /// Writes an unsigned 64-bit integer (big-endian).
+        #[inline]
+        pub fn put_u64_be(&mut self, value: u64) {
+            self.buffer.extend_from_slice(&value.to_be_bytes());
+        }
+
+        /// Reads an unsigned 64-bit integer (little-endian).
+        #[inline]
+        pub fn get_u64_le(&mut self) -> u64 {
+            let bytes = self.get(8);
+            u64::from_le_bytes(bytes.try_into().unwrap())
+        }
+
+        /// Writes an unsigned 64-bit integer (little-endian).
+        #[inline]
+        pub fn put_u64_le(&mut self, value: u64) {
+            self.buffer.extend_from_slice(&value.to_le_bytes());
+        }
+
+        // ===== Variable-length integers =====
+
+        /// Reads an unsigned variable-length integer (VarInt).
+        pub fn get_var_u32(&mut self) -> u32 {
             let mut value = 0u32;
             for i in 0..5 {
                 let b = self.get_byte();
@@ -381,35 +345,38 @@ pub mod binary {
                     return value;
                 }
             }
-            println!("Error get_unsigned_var_int()");
-            0
+            panic!("VarInt did not terminate after 5 bytes!");
         }
 
-        pub fn put_unsigned_var_int(&mut self, mut value: u32) {
-            for _ in 0..5 {
-                if (value >> 7) != 0{
-                    self.buffer.push((value | 0x80) as u8);
-                }else{
-                    self.buffer.push((value & 0x7f) as u8);
-                    return;
+        /// Writes an unsigned variable-length integer (VarInt).
+        pub fn put_var_u32(&mut self, mut value: u32) {
+            loop {
+                if value >= 0x80 {
+                    self.buffer.push((value as u8) | 0x80);
+                    value >>= 7;
+                } else {
+                    self.buffer.push(value as u8);
+                    break;
                 }
-
-                value = value >> 7;
             }
         }
 
-        pub fn get_var_int(&mut self) -> i32 {
-            let raw: u32 = self.get_unsigned_var_int();
+        /// Reads a signed variable-length integer (ZigZag encoded).
+        #[inline]
+        pub fn get_var_i32(&mut self) -> i32 {
+            let raw = self.get_var_u32();
             ((raw >> 1) as i32) ^ -((raw & 1) as i32)
-
         }
 
-        pub fn put_var_int(&mut self, value: i32) {
-            let value: i32 = (value << 1) ^ (value >> 31);
-            self.put_unsigned_var_int(value as u32);
+        /// Writes a signed variable-length integer (ZigZag encoded).
+        #[inline]
+        pub fn put_var_i32(&mut self, value: i32) {
+            let encoded = ((value << 1) ^ (value >> 31)) as u32;
+            self.put_var_u32(encoded);
         }
 
-        pub fn get_unsigned_var_long(&mut self) -> u64 {
+        /// Reads an unsigned 64-bit variable-length integer (VarLong).
+        pub fn get_var_u64(&mut self) -> u64 {
             let mut value = 0u64;
             for i in 0..10 {
                 let b = self.get_byte();
@@ -418,30 +385,38 @@ pub mod binary {
                     return value;
                 }
             }
-            0
+            panic!("VarLong did not terminate after 10 bytes!");
         }
 
-        pub fn put_unsigned_var_long(&mut self, mut value: u64) {
-            let mut buf = Vec::new();
-            while value >= 0x80 {
-                buf.push((value as u8) | 0x80);
-                value >>= 7;
+        /// Writes an unsigned 64-bit variable-length integer (VarLong).
+        pub fn put_var_u64(&mut self, mut value: u64) {
+            loop {
+                if value >= 0x80 {
+                    self.buffer.push((value as u8) | 0x80);
+                    value >>= 7;
+                } else {
+                    self.buffer.push(value as u8);
+                    break;
+                }
             }
-            buf.push(value as u8);
-            self.put(buf);
         }
 
-        pub fn get_var_long(&mut self) -> i64 {
-            let raw = self.get_unsigned_var_long();
-            (((raw << 63) >> 63) ^ raw >> 1 ^ (raw & (1 << 63))) as i64
+        /// Reads a signed 64-bit variable-length integer (ZigZag encoded).
+        #[inline]
+        pub fn get_var_i64(&mut self) -> i64 {
+            let raw = self.get_var_u64();
+            ((raw >> 1) as i64) ^ (-((raw & 1) as i64))
         }
 
-        pub fn put_var_long(&mut self, value: i64) {
-            let value: i64 = (value << 1) ^ (value >> 63);
-            self.put_unsigned_var_long(value as u64);
+        /// Writes a signed 64-bit variable-length integer (ZigZag encoded).
+        #[inline]
+        pub fn put_var_i64(&mut self, value: i64) {
+            let encoded = ((value << 1) ^ (value >> 63)) as u64;
+            self.put_var_u64(encoded);
         }
 
-        /// Returns whether the offset has reached the end of the buffer.
+        /// Returns `true` if the stream has reached the end of the buffer.
+        #[inline]
         pub fn feof(&self) -> bool {
             self.offset >= self.buffer.len() as u32
         }
