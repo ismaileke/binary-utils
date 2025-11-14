@@ -173,34 +173,6 @@ pub mod binary {
 
         // ===== 24-bit (triad) integers =====
 
-        /// Reads a 24-bit signed integer (big-endian).
-        #[inline]
-        pub fn get_i24_be(&mut self) -> i32 {
-            let bytes = self.get(3);
-            i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]])
-        }
-
-        /// Writes a 24-bit signed integer (big-endian).
-        #[inline]
-        pub fn put_i24_be(&mut self, value: i32) {
-            let bytes = value.to_be_bytes();
-            self.buffer.extend_from_slice(&bytes[1..4]);
-        }
-
-        /// Reads a 24-bit signed integer (little-endian).
-        #[inline]
-        pub fn get_i24_le(&mut self) -> i32 {
-            let bytes = self.get(3);
-            i32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0])
-        }
-
-        /// Writes a 24-bit signed integer (little-endian).
-        #[inline]
-        pub fn put_i24_le(&mut self, value: i32) {
-            let bytes = value.to_le_bytes();
-            self.buffer.extend_from_slice(&bytes[0..3]);
-        }
-
         /// Reads a 24-bit unsigned integer (big-endian).
         #[inline]
         pub fn get_u24_be(&mut self) -> u32 {

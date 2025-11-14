@@ -1,7 +1,7 @@
 [package]
 name = "binary-utils"
 authors = ["ismaileke"]
-description = "A binary system to be used for RakNet protocol"
+description = "A binary system to be used for Bedrock & RakNet protocol"
 license = "MIT"
 version = "0.1.0"
 edition = "2021"
