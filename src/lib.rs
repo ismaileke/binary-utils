@@ -397,13 +397,20 @@ pub mod binary {
         #[inline]
         pub fn get_var_i32(&mut self) -> i32 {
             let raw = self.get_var_u32();
-            ((raw >> 1) as i32) ^ -((raw & 1) as i32)
+            let mut value = (raw >> 1) as i32;
+            if raw & 1 != 0 {
+                value = !value;
+            }
+            value
         }
 
         /// Writes a signed variable-length integer (ZigZag encoded).
         #[inline]
         pub fn put_var_i32(&mut self, value: i32) {
-            let encoded = ((value << 1) ^ (value >> 31)) as u32;
+            let mut encoded = (value << 1) as u32;
+            if value < 0 {
+                encoded = !encoded;
+            }
             self.put_var_u32(encoded);
         }
 
@@ -437,13 +444,20 @@ pub mod binary {
         #[inline]
         pub fn get_var_i64(&mut self) -> i64 {
             let raw = self.get_var_u64();
-            ((raw >> 1) as i64) ^ (-((raw & 1) as i64))
+            let mut value = (raw >> 1) as i64;
+            if raw & 1 != 0 {
+                value = !value;
+            }
+            value
         }
 
         /// Writes a signed 64-bit variable-length integer (ZigZag encoded).
         #[inline]
         pub fn put_var_i64(&mut self, value: i64) {
-            let encoded = ((value << 1) ^ (value >> 63)) as u64;
+            let mut encoded = (value << 1) as u64;
+            if value < 0 {
+                encoded = !encoded;
+            }
             self.put_var_u64(encoded);
         }
     }
